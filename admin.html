@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nook SMS — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#070c1a;--navy2:#0b1120;--card:#0f1829;
+  --border:#172035;--accent:#e8622a;--accent2:#ff7a45;
+  --text:#e8eaf0;--muted:#5a6585;--muted2:#3a4560;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;
+  --font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--navy);color:var(--text);min-height:100vh;display:flex}
+.sidebar{width:220px;min-height:100vh;background:var(--navy2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100}
+.sidebar-logo{padding:20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white}
+.logo-text{font-size:16px;font-weight:700}
+.admin-badge{background:rgba(239,68,68,0.15);color:#ef4444;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid rgba(239,68,68,0.2)}
+.nav{flex:1;padding:12px 8px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+.nav-item.active{background:rgba(232,98,42,0.1);color:var(--accent2)}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.nav-label{font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:0.7px;padding:0 8px;margin:16px 0 6px}
+.nav-badge{margin-left:auto;background:rgba(239,68,68,0.15);color:#ef4444;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+
+.main{margin-left:220px;flex:1}
+.topbar{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(7,12,26,0.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:50}
+.page-title{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.admin-key-display{font-family:var(--mono);font-size:11px;color:var(--muted);background:rgba(255,255,255,0.04);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+
+.content{padding:28px}
+
+/* ALERT BAR */
+.alert-bar{
+  background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);
+  border-radius:10px;padding:12px 16px;margin-bottom:24px;
+  display:flex;align-items:center;gap:10px;font-size:13px;
+}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .15s}
+.kpi:hover{border-color:rgba(232,98,42,0.25)}
+.kpi-val{font-size:28px;font-weight:700;letter-spacing:-0.5px;line-height:1}
+.kpi-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500}
+.kpi-sub{font-size:11px;margin-top:6px}
+.up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--muted)}
+
+/* SYSTEM STATUS */
+.status-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.status-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.status-title{font-size:14px;font-weight:600;margin-bottom:14px}
+.gateway-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid rgba(23,32,53,0.8);
+}
+.gateway-item:last-child{border:none;padding-bottom:0}
+.gateway-name{font-size:13px;font-weight:500}
+.gateway-detail{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.gstatus{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.healthy{background:rgba(34,197,94,0.1);color:var(--green)}
+.degraded{background:rgba(245,158,11,0.1);color:var(--yellow)}
+.down{background:rgba(239,68,68,0.1);color:var(--red)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.not-configured{background:rgba(107,118,148,0.1);color:var(--muted)}
+
+/* CLIENTS TABLE */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.table-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.th{font-size:15px;font-weight:600;letter-spacing:-0.2px}
+.table-actions{display:flex;gap:10px}
+.search{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:220px}
+.search::placeholder{color:var(--muted)}
+.btn-sm{padding:7px 14px;border-radius:7px;font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}
+.btn-outline{background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 22px;font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;text-align:left;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid rgba(23,32,53,0.6);transition:background .1s}
+tbody tr:hover{background:rgba(255,255,255,0.02)}
+tbody tr:last-child{border:none}
+td{padding:13px 22px;font-size:13px;vertical-align:middle}
+.mono{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.plan-badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.4px}
+.plan-basic{background:rgba(107,118,148,0.1);color:var(--muted)}
+.plan-standard{background:rgba(59,130,246,0.1);color:var(--blue)}
+.plan-enterprise{background:rgba(232,98,42,0.12);color:var(--accent2)}
+.active-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.status-active{background:rgba(34,197,94,0.1);color:var(--green)}
+.status-suspended{background:rgba(239,68,68,0.1);color:var(--red)}
+.action-btns{display:flex;gap:6px}
+.action-btn{padding:5px 10px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;border:none;font-family:var(--font);transition:all .15s}
+.add-credits{background:rgba(34,197,94,0.1);color:var(--green)}
+.suspend{background:rgba(239,68,68,0.08);color:var(--red)}
+.view{background:rgba(59,130,246,0.1);color:var(--blue)}
+
+/* MODALS */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  display:none;align-items:center;justify-content:center;z-index:1000;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:400px}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:6px}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:20px}
+.form-row{margin-bottom:16px}
+.form-row label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+.form-row input{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">N</div>
+    <div>
+      <div class="logo-text">Admin</div>
+    </div>
+    <span class="admin-badge" style="margin-left:auto">ROOT</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Tableau de bord</div>
+    <a href="admin.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Vue d'ensemble
+    </a>
+    <div class="nav-label">Gestion</div>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clients
+      <span class="nav-badge">4</span>
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Facturation
+    </a>
+    <div class="nav-label">Système</div>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Passerelles
+    </a>
+    <a href="login.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">Vue d'ensemble</div>
+    <div class="admin-key-display" id="admin-key-display">X-Admin-Key: ••••••••••••</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ALERT -->
+    <div class="alert-bar" id="alert-bar" style="display:none">
+      <div class="alert-dot"></div>
+      <span id="alert-text"></span>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-val" id="kpi-clients">4</div>
+        <div class="kpi-label">Clients actifs</div>
+        <div class="kpi-sub up">+1 ce mois</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" id="kpi-today">247</div>
+        <div class="kpi-label">SMS aujourd'hui</div>
+        <div class="kpi-sub up">↑ +12%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--green)" id="kpi-rate">98.4<span style="font-size:16px">%</span></div>
+        <div class="kpi-label">Taux livraison</div>
+        <div class="kpi-sub up">Excellent</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" id="kpi-revenue">312 <span style="font-size:16px;color:var(--muted)">DH</span></div>
+        <div class="kpi-label">Revenus ce mois</div>
+        <div class="kpi-sub up">↑ +18%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--yellow)" id="kpi-lowcredits">1</div>
+        <div class="kpi-label">Crédits faibles</div>
+        <div class="kpi-sub neutral">< 100 DH</div>
+      </div>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="status-row">
+      <div class="status-card">
+        <div class="status-title">🌐 Passerelles SMS</div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">Africa's Talking</div>
+            <div class="gateway-detail">Primaire • api.africastalking.com</div>
+          </div>
+          <span class="gstatus healthy"><span class="dot"></span>Opérationnel</span>
+        </div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">Vonage</div>
+            <div class="gateway-detail">Fallback 1</div>
+          </div>
+          <span class="gstatus not-configured">Non configuré</span>
+        </div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">Infobip</div>
+            <div class="gateway-detail">Fallback 2</div>
+          </div>
+          <span class="gstatus not-configured">Non configuré</span>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-title">⚙️ Serveur</div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">Uptime</div>
+            <div class="gateway-detail" id="uptime">Chargement...</div>
+          </div>
+          <span class="gstatus healthy"><span class="dot"></span>En ligne</span>
+        </div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">Base de données</div>
+            <div class="gateway-detail">Supabase PostgreSQL</div>
+          </div>
+          <span class="gstatus healthy"><span class="dot"></span>Connecté</span>
+        </div>
+        <div class="gateway-item">
+          <div>
+            <div class="gateway-name">File d'attente Redis</div>
+            <div class="gateway-detail">Bull Queue</div>
+          </div>
+          <span class="gstatus healthy"><span class="dot"></span>Actif</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTS TABLE -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="th">Clients</div>
+        <div class="table-actions">
+          <input class="search" type="text" placeholder="Rechercher..." oninput="filterClients(this.value)">
+          <button class="btn-sm btn-accent" onclick="loadClients()">↻ Actualiser</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Entreprise</th>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>Crédits</th>
+            <th>Messages</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="clients-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- RECENT FAILURES -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="th">Derniers échecs</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Message ID</th>
+            <th>Destinataire</th>
+            <th>Raison</th>
+            <th>Passerelle</th>
+            <th>Heure</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">nk_bcc844982...</span></td>
+            <td><span class="mono">+212642...</span></td>
+            <td style="color:var(--red);font-size:12px">InvalidSenderId</td>
+            <td><span class="mono">africastalking</span></td>
+            <td style="color:var(--muted);font-size:12px">08:23</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</main>
+
+<!-- ADD CREDITS MODAL -->
+<div class="modal-overlay" id="credits-modal">
+  <div class="modal">
+    <h3>+ Ajouter des crédits</h3>
+    <p>Client: <strong id="modal-client-name">—</strong></p>
+    <div class="form-row">
+      <label>Montant (DH)</label>
+      <input type="number" id="credits-amount" placeholder="500" min="10">
+    </div>
+    <div class="form-row">
+      <label>Référence paiement</label>
+      <input type="text" id="credits-ref" placeholder="virement-2026-001">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-sm btn-outline" onclick="closeModal()">Annuler</button>
+      <button class="btn-sm btn-accent" onclick="addCredits()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_BASE = 'http://localhost:3000'
+const ADMIN_KEY = prompt('Entrez votre clé admin (ADMIN_API_KEY):') || ''
+document.getElementById('admin-key-display').textContent = 'X-Admin-Key: ' + ADMIN_KEY.substring(0,12) + '...'
+
+let currentClientId = ''
+
+const mockClients = [
+  {id:'c1',name:'Rapidio Delivery',email:'dev@rapidio.ma',plan:'standard',credits:325,messages:247,status:'active'},
+  {id:'c2',name:'Souk Express',email:'tech@soukexpress.ma',plan:'basic',credits:42,messages:89,status:'active'},
+  {id:'c3',name:'MedConnect',email:'api@medconnect.ma',plan:'enterprise',credits:1820,messages:1247,status:'active'},
+  {id:'c4',name:'PayMaroc',email:'dev@paymaroc.ma',plan:'standard',credits:8,messages:340,status:'active'},
+]
+
+function renderClients(clients){
+  const tbody = document.getElementById('clients-tbody')
+  tbody.innerHTML = ''
+  clients.forEach(c=>{
+    const lowCredit = c.credits < 50
+    tbody.innerHTML += `
+      <tr>
+        <td style="font-weight:500">${c.name}</td>
+        <td class="mono">${c.email}</td>
+        <td><span class="plan-badge plan-${c.plan}">${c.plan}</span></td>
+        <td>
+          <span style="font-weight:600;color:${lowCredit?'var(--red)':'var(--text)'}">${c.credits} DH</span>
+          ${lowCredit?'<span style="font-size:10px;color:var(--red);display:block">⚠ Faible</span>':''}
+        </td>
+        <td>${c.messages.toLocaleString()}</td>
+        <td><span class="active-badge status-${c.status}">${c.status==='active'?'✓ Actif':'✗ Suspendu'}</span></td>
+        <td>
+          <div class="action-btns">
+            <button class="action-btn add-credits" onclick="openCreditsModal('${c.id}','${c.name}')">+ Crédits</button>
+            <button class="action-btn suspend" onclick="suspendClient('${c.id}','${c.name}')">Suspendre</button>
+            <button class="action-btn view">Voir</button>
+          </div>
+        </td>
+      </tr>`
+  })
+  // Low credits alert
+  const lowCredit = clients.filter(c=>c.credits<50)
+  if(lowCredit.length>0){
+    document.getElementById('alert-bar').style.display='flex'
+    document.getElementById('alert-text').textContent = `⚠ ${lowCredit.length} client(s) ont des crédits faibles: ${lowCredit.map(c=>c.name).join(', ')}`
+  }
+}
+
+renderClients(mockClients)
+
+function filterClients(q){
+  const filtered = mockClients.filter(c=>
+    c.name.toLowerCase().includes(q.toLowerCase()) ||
+    c.email.toLowerCase().includes(q.toLowerCase())
+  )
+  renderClients(filtered)
+}
+
+function openCreditsModal(id,name){
+  currentClientId = id
+  document.getElementById('modal-client-name').textContent = name
+  document.getElementById('credits-modal').classList.add('open')
+}
+function closeModal(){
+  document.getElementById('credits-modal').classList.remove('open')
+}
+
+async function addCredits(){
+  const amount = document.getElementById('credits-amount').value
+  const ref = document.getElementById('credits-ref').value
+  if(!amount||!ref){alert('Remplissez tous les champs');return}
+  try{
+    const r = await fetch(`${ADMIN_BASE}/v1/admin/clients/${currentClientId}/add-credits`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
+      body:JSON.stringify({amount:parseFloat(amount),payment_reference:ref})
+    })
+    const d = await r.json()
+    if(d.success){
+      closeModal()
+      alert(`✓ ${amount} DH ajoutés pour ${d.client || 'le client'}`)
+      loadClients()
+    }else{
+      alert('Erreur: '+(d.error||'Échec'))
+    }
+  }catch(e){
+    alert('Serveur non disponible\nEn mode démo: crédits simulés ajoutés')
+    closeModal()
+  }
+}
+
+function suspendClient(id,name){
+  if(!confirm(`Suspendre le compte de ${name} ?`)) return
+  fetch(`${ADMIN_BASE}/v1/admin/clients/${id}/suspend`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
+    body:JSON.stringify({reason:'Suspension manuelle par admin'})
+  }).then(()=>alert(`${name} suspendu`)).catch(()=>alert('Mode démo: suspension simulée'))
+}
+
+async function loadClients(){
+  try{
+    const r = await fetch(`${ADMIN_BASE}/v1/admin/clients`,{
+      headers:{'X-Admin-Key':ADMIN_KEY}
+    })
+    const d = await r.json()
+    if(d.clients) renderClients(d.clients)
+  }catch(e){
+    renderClients(mockClients)
+  }
+}
+
+// Load system info
+fetch(`${ADMIN_BASE}/health`)
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.uptime) document.getElementById('uptime').textContent = Math.round(parseFloat(d.uptime)/60) + ' minutes'
+  })
+  .catch(()=>{
+    document.getElementById('uptime').textContent = 'Non disponible'
+  })
+</script>
+</body>
+</html>
